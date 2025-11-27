@@ -1,75 +1,89 @@
-from fastapi import FastAPI
-import mysql.connector
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List, Literal
+from passlib.hash import pbkdf2_sha256
 
-"""mysql connections"""
-expensetrackerdb = mysql.connector.connect(
-    host = "localhost",
-    user = "expensetrackerpython",
-    password = "1Sh44n@))%",
-    database = 'expense_tracker'
-)
+import models
+import schemas
+from database import engine, get_db
 
-"""mysql cursor init and fastapi app init"""
-etdbcursor = expensetrackerdb.cursor()
 app = FastAPI()
-
-"""
-3 different object classes to make:
-User class
-
-    features:
-    - User authentification
-    - Sign in
-    - Create an account
-
-    attributes:
-    - user_id           INT
-    - email             STR         [255 char limit]
-    - password_hash     STR         [255 char limit]
-    - created_at        TIMESTAMP
-
-Category class
-    
-    features:
-    - 
-
-    attributes:
-    - id                INT
-    - user_id           INT         [tied to user class]
-    - name              STR         [255 char limit]
-    - type              ENUM        [either 'expense' or 'income']
-    - created_at        TIMESTAMP
-
-Transaction class
-    
-    features:
-    - 
-
-    attributes:
-    - id                INT
-    - user_id           INT
-    - category_id       INT
-    - name              STR         [255 char limit]
-    - amount            DEC/FLT     [12 digits left of the decimal, 2 digits right of the decimal]
-    - transaction_date  DATE
-    - description       STR         [255 char limit]
-    - created_at        TIMESTAMP
-
-"""
-
-class User():
-    pass
-
-class Category():
-    pass
-
-class Transaction():
-    pass
 
 @app.get("/")
 def root():
-    return {"Hello" : "World"}
+    return {"message": "backend API working as intended !"}
 
-if __name__ == "__main__":
+@app.post("/users", response_model = schemas.UserResponse)
+def createUser(user: schemas.UserCreate, db: Session = Depends(get_db)):
+
+    db_user = models.User(
+        email = user.email,
+        password = pbkdf2_sha256.hash(user.password)
+    )
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+
+@app.get("/users/{user_email}", response_model = schemas.UserResponse)
+def getUser(user_email: str, db: Session = Depends(get_db)):
+    pass
+
+@app.delete("/users/{user_email}")
+def delUser(user_email: str, db: Session = Depends(get_db)):
+    pass
+
+@app.post("/categories", response_model = schemas.UserResponse)
+def createCategory(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
+
+    db_category = models.Category(
+        name = category.name,
+        type = category.type
+    )
+
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+
+    return db_category
+
+@app.get("/categories/{category_id}", response_model = schemas.CategoryResponse)
+def getCategory(category_id: int, db: Session = Depends(get_db)):
+    pass
+
+@app.get("/categories/{category_type}", response_model = List[schemas.CategoryResponse])
+def getCategory(category_type: Literal['income', 'expense'], db: Session = Depends(get_db)):
+    pass
+
+@app.delete("/categories/{category_id}")
+def delCategory(category_id: int, db: Session = Depends(get_db)):
+    pass
+
+@app.post("/transactions", response_model = schemas.TransactionResponse)
+def createTransaction(transaction: schemas.TransactionCreate, db: Session = Depends(get_db)):
+
+    db_transaction = models.Transaction(
+        name = transaction.name,
+        category_id = transaction.category_id,
+        amount = transaction.amount,
+        transaction_date = transaction.transaction_date,
+        description = transaction.description
+    )
+
+    db.add(db_transaction)
+    db.commit()
+    db.refresh(db_transaction)
+
+    return db_transaction
+
+@app.get("/transactions/{transaction_id}", response_model = schemas.TransactionResponse)
+def getTransaction(transaction_id: str, db: Session = Depends(get_db)):
+    pass
+
+
+
+if (__name__ == "__main__"):
     import uvicorn
     uvicorn.run(app, host = "0.0.0.0", port = 8000)
