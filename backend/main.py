@@ -9,6 +9,8 @@ from database import engine, get_db
 
 app = FastAPI()
 
+
+
 @app.get("/")
 def root():
     return {"message": "backend API working as intended !"}
@@ -18,7 +20,7 @@ def createUser(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     db_user = models.User(
         email = user.email,
-        password = pbkdf2_sha256.hash(user.password)
+        password_hash = pbkdf2_sha256.hash(user.password)
     )
 
     db.add(db_user)
@@ -35,7 +37,7 @@ def getUser(user_email: str, db: Session = Depends(get_db)):
 def delUser(user_email: str, db: Session = Depends(get_db)):
     pass
 
-@app.post("/categories", response_model = schemas.UserResponse)
+@app.post("/categories", response_model = schemas.CategoryResponse)
 def createCategory(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
 
     db_category = models.Category(
@@ -53,7 +55,7 @@ def createCategory(category: schemas.CategoryCreate, db: Session = Depends(get_d
 def getCategory(category_id: int, db: Session = Depends(get_db)):
     pass
 
-@app.get("/categories/{category_type}", response_model = List[schemas.CategoryResponse])
+@app.get("/categories/by-type/{category_type}", response_model = List[schemas.CategoryResponse])
 def getCategory(category_type: Literal['income', 'expense'], db: Session = Depends(get_db)):
     pass
 
@@ -79,10 +81,8 @@ def createTransaction(transaction: schemas.TransactionCreate, db: Session = Depe
     return db_transaction
 
 @app.get("/transactions/{transaction_id}", response_model = schemas.TransactionResponse)
-def getTransaction(transaction_id: str, db: Session = Depends(get_db)):
+def getTransaction(transaction_id: int, db: Session = Depends(get_db)):
     pass
-
-
 
 if (__name__ == "__main__"):
     import uvicorn
